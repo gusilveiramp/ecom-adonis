@@ -16,6 +16,7 @@ class CouponUserSchema extends Schema {
         .references('id')
         .inTable('coupons')
         .onDelete('cascade')
+
       table
         .foreign('user_id')
         .references('id')

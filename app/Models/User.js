@@ -22,7 +22,14 @@ class User extends Model {
   }
 
   /**
-   * Traits ACL
+   * Oculta campos definidos no retorno das queries no DB
+   */
+  static get hidden() {
+    return ['password']
+  }
+
+  /**
+   * Traits
    */
   static get traits() {
     return [
@@ -43,6 +50,14 @@ class User extends Model {
    */
   tokens() {
     return this.hasMany('App/Models/Token')
+  }
+
+  image() {
+    return this.belongsTo('App/Models/Image')
+  }
+
+  coupons() {
+    return this.belongsToMany('App/Models/Coupon')
   }
 }
 
