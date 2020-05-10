@@ -52,10 +52,16 @@ class User extends Model {
     return this.hasMany('App/Models/Token')
   }
 
+  /**
+   * Relacionamento entre Usuário e Imagem do perfil
+   */
   image() {
     return this.belongsTo('App/Models/Image')
   }
 
+  /**
+   * Relacionamento entre Usuário e Cupons de desconto
+   */
   coupons() {
     return this.belongsToMany('App/Models/Coupon')
   }
