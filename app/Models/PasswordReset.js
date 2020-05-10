@@ -17,6 +17,7 @@ class PasswordReset extends Model {
 
   /**
    * Lucid vai executar os metodos GET (Getters) automaticamente ao instaciar o model
+   * static get exemplo() { ... }
    */
 
   /**
