@@ -36,6 +36,9 @@ class ExceptionHandler extends BaseExceptionHandler {
    * @return {void}
    */
   async report(error, { request }) {
+    /**
+     * Captura os erros acima de status 500
+     */
     if (error.status >= 500) {
       Logger.error(error.message, {
         stack: error.stack,
