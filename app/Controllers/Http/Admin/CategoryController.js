@@ -17,18 +17,26 @@ class CategoryController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
-   * @param {View} ctx.view
-   * @param {Object} ctx.pagination
+   * @param {object} ctx.pagination
    */
-  async index({ request, response, view, pagination }) {
+  async index({ request, response, pagination }) {
+    /**
+     * Busca por titulo
+     */
+    const title = request.input('title')
+    const query = Category.query()
+    if (title) {
+      // % no inicio (encontre algo que comece com o title)
+      // % no final (encontre algo que termine com o title)
+      // % no inicio e no final (não importa, traga tudo q tenha o title)
+      query.where('title', 'ILIKE', `%${title}%`)
+    }
+
     /**
      * pagination vem do middleware pagination, que é um middleware global aplicado
      * em todas as requisições do tipo GET
      */
-    const categories = await Category.query().paginate(
-      pagination.page,
-      pagination.limit
-    )
+    const categories = await query.paginate(pagination.page, pagination.limit)
     return response.send(categories)
   }
 
@@ -40,7 +48,17 @@ class CategoryController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store({ request, response }) {}
+  async store({ request, response }) {
+    try {
+      const { title, description, image_id } = request.all()
+      const category = await Category.create({ title, description, image_id })
+      return response.status(201).send(category)
+    } catch (error) {
+      return response
+        .status(400)
+        .send({ message: 'Erro ao processar a sua solicitação' })
+    }
+  }
 
   /**
    * Display a single category.
@@ -49,9 +67,15 @@ class CategoryController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
-   * @param {View} ctx.view
    */
-  async show({ params, request, response, view }) {}
+  async show({ params, request, response }) {
+    try {
+      const category = await Category.findOrFail(params.id)
+      return response.send(category)
+    } catch (error) {
+      return response.status(404).send({ message: 'Categoria não encontrada' })
+    }
+  }
 
   /**
    * Update category details.
@@ -61,7 +85,21 @@ class CategoryController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update({ params, request, response }) {}
+  async update({ params, request, response }) {
+    try {
+      const category = await Category.findOrFail(params.id)
+      const { title, description, image_id } = request.all()
+      // merge adiciona os novos valores ao objeto category
+      category.merge({ title, description, image_id })
+      await category.save()
+
+      return response.send(category)
+    } catch (error) {
+      return response
+        .status(404)
+        .send({ message: 'Não foi possível atualizar a categoria' })
+    }
+  }
 
   /**
    * Delete a category with id.
@@ -71,7 +109,18 @@ class CategoryController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async destroy({ params, request, response }) {}
+  async destroy({ params, request, response }) {
+    try {
+      const category = await Category.findOrFail(params.id)
+      await category.delete()
+      // 204 = ok, mas sem body.
+      return response.status(204).send()
+    } catch (error) {
+      return response
+        .status(500)
+        .send({ message: 'Não foi possível excluir a categoria' })
+    }
+  }
 }
 
 module.exports = CategoryController

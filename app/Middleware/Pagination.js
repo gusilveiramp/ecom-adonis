@@ -10,7 +10,6 @@ class Pagination {
    * @param {Function} next
    */
   async handle(ctx, next) {
-    // call next to advance the request
     /**
      * Adiciona a paginação apenas aos metodos GET
      */
@@ -28,6 +27,7 @@ class Pagination {
         ctx.pagination.limit = perpage
       }
     }
+    // call next to advance the request
     await next()
   }
 }
