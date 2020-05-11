@@ -26,8 +26,8 @@ class CategoryController {
     const title = request.input('title')
     const query = Category.query()
     if (title) {
-      // % no inicio (encontre algo que comece com o title)
-      // % no final (encontre algo que termine com o title)
+      // % no inicio (encontre algo que termine com o title)
+      // % no final (encontre algo que comece com o title)
       // % no inicio e no final (não importa, traga tudo q tenha o title)
       query.where('title', 'ILIKE', `%${title}%`)
     }
