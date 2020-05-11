@@ -10,7 +10,16 @@ Route.group(() => {
   /**
    * Category
    */
-  Route.resource('categories', 'CategoryController').apiOnly()
+  Route.resource('categories', 'CategoryController')
+    .apiOnly()
+    .validator(
+      // passando Validator para rotas resource
+      // nome da rota | caminho do validator
+      new Map([
+        [['categories.store'], ['Admin/StoreCategory']],
+        [['categories.update'], ['Admin/StoreCategory']],
+      ])
+    )
   /**
    * Product
    */
@@ -18,7 +27,14 @@ Route.group(() => {
   /**
    * Users
    */
-  Route.resource('users', 'UserController').apiOnly()
+  Route.resource('users', 'UserController')
+    .apiOnly()
+    .validator(
+      new Map([
+        [['users.store'], ['Admin/StoreUser']],
+        [['users.update'], ['Admin/StoreUser']],
+      ])
+    )
   /**
    * Images
    */
@@ -32,7 +48,9 @@ Route.group(() => {
    */
   Route.post('orders/:id/discount', 'OrderController.applyDiscount')
   Route.delete('orders/:id/discount', 'OrderController.removeDiscount')
-  Route.resource('orders', 'OrderController').apiOnly()
+  Route.resource('orders', 'OrderController')
+    .apiOnly()
+    .validator(new Map([[['orders.store'], ['Admin/StoreOrder']]]))
 })
   .prefix('v1/admin')
   .namespace('Admin')
