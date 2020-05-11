@@ -25,8 +25,8 @@ class UserController {
 
     if (name) {
       query.where('name', 'ILIKE', `%${name}%`)
-      query.orWhere('surname', 'ILIKE'. `%${name}%`)
-      query.orWhere('email', 'ILIKE'. `%${name}%`)
+      query.orWhere('surname', 'ILIKE', `%${name}%`)
+      query.orWhere('email', 'ILIKE', `%${name}%`)
     }
 
     const users = await query.paginate(pagination.page, pagination.limit)
@@ -42,13 +42,21 @@ class UserController {
    * @param {Response} ctx.response
    */
   async store({ request, response }) {
-    try{
-      const userData = request.only(['name', 'username', 'email', 'password', 'image_id'])
-  
+    try {
+      const userData = request.only([
+        'name',
+        'surname',
+        'email',
+        'password',
+        'image_id',
+      ])
+
       const user = await User.create(userData)
       return response.status(201).send(user)
     } catch (error) {
-      return response.status(400).send({message: 'Não foi possivel criar o usuário'})
+      return response
+        .status(400)
+        .send({ message: 'Não foi possivel criar o usuário' })
     }
   }
 
@@ -65,17 +73,6 @@ class UserController {
   }
 
   /**
-   * Render a form to update an existing user.
-   * GET users/:id/edit
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-  async edit({ params, request, response, view }) {}
-
-  /**
    * Update user details.
    * PUT or PATCH users/:id
    *
@@ -90,7 +87,7 @@ class UserController {
       'surname',
       'email',
       'password',
-      'image_id'
+      'image_id',
     ])
     user.merge(userData)
     await user.save()
@@ -110,8 +107,10 @@ class UserController {
     try {
       await user.delete()
       return response.status(204).send()
-    } catch(error) { 
-      response.status(500).send({message: 'Não foi possível excluir o usuário'})
+    } catch (error) {
+      response
+        .status(500)
+        .send({ message: 'Não foi possível excluir o usuário' })
     }
   }
 }
