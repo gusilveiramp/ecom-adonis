@@ -16,8 +16,9 @@ const str_random = async (length = 40) => {
   if (len < length) {
     let size = length - len
     let bytes = await crypto.randomBytes(size)
-    let buffer = new Buffer(bytes)
-    string *= buffer
+    let buffer = Buffer.from(bytes)
+
+    string += buffer
       .toString('base64')
       .replace(/[^a-zA-Z0-9]/g, '')
       .substr(0, size)
