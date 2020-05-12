@@ -64,7 +64,9 @@ class OrderController {
       }
 
       await trx.commit()
-      order = await transform.item(order, Transformer)
+      order = await Order.find(order.id)
+      order = await transform.include('user,items').item(order, Transformer)
+
       return response.status(201).send(order)
     } catch (error) {
       await trx.rollback()
@@ -79,11 +81,11 @@ class OrderController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
-    * @param {Transformer} ctx.transform
+   * @param {Transformer} ctx.transform
    */
   async show({ params, request, response, transform }) {
     var order = await Order.findOrFail(params.id)
-    order = await transform.item(order Transformer)
+    order = await transform.item(order, Transformer)
     return response.send(order)
   }
 
@@ -108,7 +110,7 @@ class OrderController {
       await order.save(trx)
       await trx.commit()
 
-      order = await transform.item(order, Transformer)
+      order = await transform.include('items,user,discounts,coupons').item(order, Transformer)
       return response.send(order)
     } catch (error) {
       trx.rollback()
@@ -140,10 +142,10 @@ class OrderController {
     }
   }
 
-  async applyDiscount({ params, request, response }) {
+  async applyDiscount({ params, request, response, transform }) {
     const { code } = request.all()
     const coupon = await Coupon.findByOrFail('code', code.toUpperCase()) //busco em uppercase pq estamos salvando os cupons assim no BD
-    const order = await Order.findOrFail(params.id)
+    var order = await Order.findOrFail(params.id)
 
     var discount,
       info = {}
@@ -169,7 +171,7 @@ class OrderController {
         info.message = 'Não foi possível aplicar este cupom'
         info.success = false
       }
-
+      order = await transform.include('items,user,discounts,coupons').item(order, Transformer)
       return response.send({ order, info })
     } catch (error) {
       return response.status(400).send({ message: 'Erro ao aplicar o cupom' })
