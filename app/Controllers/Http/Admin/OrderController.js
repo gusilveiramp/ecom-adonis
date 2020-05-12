@@ -8,7 +8,6 @@ const Coupon = use('App/Models/Coupon')
 const Discount = use('App/Models/Discount')
 const Database = use('Database')
 const Service = use('App/Services/Order/OrderService')
-)
 
 /**
  * Resourceful controller for interacting with orders
@@ -28,15 +27,14 @@ class OrderController {
     const query = Order.query()
 
     if (status && id) {
-      query.where('status', status)
-      query.orWhere('id', 'ILIKE', `%${id}}%`)
+      query.where('status', status).orWhere('id', 'ILIKE', `%${id}}%`)
     } else if (status) {
       query.where('status', status)
     } else if (id) {
       query.orWhere('id', 'ILIKE', `%${id}}%`)
     }
 
-    const orders = query.paginate(pagination.page, pagination.limit)
+    const orders = await query.paginate(pagination.page, pagination.limit)
     return response.send(orders)
   }
 
@@ -56,16 +54,15 @@ class OrderController {
       let order = await Order.create({ user_id, status }, trx)
       const service = new Service(order, trx)
 
-      if(items && items.length > 0) {
+      if (items && items.length > 0) {
         await service.syncItems(items)
       }
 
       await trx.commit()
       return response.status(201).send(order)
-      
     } catch (error) {
       await trx.rollback()
-      return response.status(400).send({message: 'Não foi possível criar o pedido'})
+      return response.status(400).send({ message: 'Não foi possível criar o pedido' })
     }
   }
 
@@ -96,7 +93,7 @@ class OrderController {
     try {
       const { user_id, items, status } = request.all()
       order.merge({ user_id, status })
-      
+
       const service = new Service(order, trx)
       await service.updateItems(items)
       await order.save(trx)
@@ -104,9 +101,8 @@ class OrderController {
       return response.send(order)
     } catch (error) {
       trx.rollback()
-      return response.status(400).send({message: 'Não foi possível atualizar o pedido'})
+      return response.status(400).send({ message: 'Não foi possível atualizar o pedido' })
     }
-
   }
 
   /**
@@ -133,22 +129,23 @@ class OrderController {
     }
   }
 
-  async applyDiscount({params, request, response}) {
+  async applyDiscount({ params, request, response }) {
     const { code } = request.all()
     const coupon = await Coupon.findByOrFail('code', code.toUpperCase()) //busco em uppercase pq estamos salvando os cupons assim no BD
     const order = await Order.findOrFail(params.id)
 
-    var discount, info = {}
+    var discount,
+      info = {}
 
     try {
       const service = new Service(order)
       const canAddDiscount = await service.canApplyDiscount(coupon)
       const orderDiscount = await order.coupons().getCount() // getCount() é um método do adonis que conta quantos relacionamentos existem aqui e traz isso pra mim
 
-      // verifica se não tem nenhum cupom aplicado a esse pedido 
+      // verifica se não tem nenhum cupom aplicado a esse pedido
       // ou se tem algum cupom, verifica se esse cupom é recursivo (ou seja, se pode ser utilizado em conjunto com outros pedidos/produtos)
       const canApplyToOrder = orderDiscount < 1 || (orderDiscount >= 1 && coupon.recursive)
-      if(canAddDiscount && canApplyToOrder) {
+      if (canAddDiscount && canApplyToOrder) {
         // to criando um desconto, mas não to passando nenhum valor
         // o valor está sendo pego diretamente do nosso Hook
         discount = await Discount.findOrCreate({
@@ -168,7 +165,7 @@ class OrderController {
     }
   }
 
-  async removeDiscount({request, response}) {
+  async removeDiscount({ request, response }) {
     const { discount_id } = request.all()
     const discount = await Discount.findOrFail(discount_id)
     await discount.delete()

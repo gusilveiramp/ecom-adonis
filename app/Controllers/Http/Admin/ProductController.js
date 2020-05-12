@@ -5,6 +5,7 @@
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
 const Product = use('App/Models/Product')
+const Transformer = use('App/Models/Admin/ProductTransformer')
 
 /**
  * Resourceful controller for interacting with products
@@ -18,8 +19,9 @@ class ProductController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    * @param {object} ctx.pagination
+   * @param {Transformer} ctx.transform
    */
-  async index({ request, response, pagination }) {
+  async index({ request, response, pagination, transform }) {
     const name = request.input('name')
     const query = Product.query()
 
@@ -30,7 +32,8 @@ class ProductController {
       query.where('name', 'ILIKE', `%${name}%`)
     }
 
-    const products = await query.paginate(pagination.page, pagination.limit)
+    var products = await query.paginate(pagination.page, pagination.limit)
+    products = await transform.paginate(products, Transformer)
     return response.send(products)
   }
 
@@ -41,21 +44,21 @@ class ProductController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    */
-  async store({ request, response }) {
+  async store({ request, response, transform }) {
     try {
       const { name, description, price, image_id } = request.all()
-      const product = await Product.create({
+      var product = await Product.create({
         name,
         description,
         price,
         image_id,
       })
+      product = await transform.item(product, Transformer)
       return response.status(201).send(product)
     } catch (error) {
-      return response
-        .status(400)
-        .send({ message: 'Não foi possível criar o produto' })
+      return response.status(400).send({ message: 'Não foi possível criar o produto' })
     }
   }
 
@@ -79,18 +82,19 @@ class ProductController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    */
-  async update({ params, request, response }) {
+  async update({ params, request, response, transform }) {
     try {
-      const product = await Product.findOrFail(params.id)
+      var product = await Product.findOrFail(params.id)
       const { name, description, price, image_id } = request.all()
       product.merge({ name, description, price, image_id })
       await product.save()
+      //transoformer
+      product = await transform.item(product, Transformer)
       return response.send(product)
     } catch (error) {
-      return response
-        .status(400)
-        .send({ message: 'Não foi possível atualizar o produto' })
+      return response.status(400).send({ message: 'Não foi possível atualizar o produto' })
     }
   }
 
@@ -108,9 +112,7 @@ class ProductController {
       await product.delete()
       return response.status(204).send()
     } catch (error) {
-      return response
-        .status(500)
-        .send({ message: 'Não foi possível excluir o produto' })
+      return response.status(500).send({ message: 'Não foi possível excluir o produto' })
     }
   }
 }

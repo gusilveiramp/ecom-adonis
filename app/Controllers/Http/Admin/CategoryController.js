@@ -5,6 +5,7 @@
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
 const Category = use('App/Models/Category')
+const Transformer = use('App/Transformers/Admin/CategoryTransformer')
 
 /**
  * Resourceful controller for interacting with categories
@@ -17,9 +18,10 @@ class CategoryController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    * @param {object} ctx.pagination
    */
-  async index({ request, response, pagination }) {
+  async index({ request, response, transform, pagination }) {
     /**
      * Busca por titulo
      */
@@ -36,7 +38,8 @@ class CategoryController {
      * pagination vem do middleware pagination, que é um middleware global aplicado
      * em todas as requisições do tipo GET
      */
-    const categories = await query.paginate(pagination.page, pagination.limit)
+    var categories = await query.paginate(pagination.page, pagination.limit)
+    categories = await transform.paginate(categories, Transformer)
     return response.send(categories)
   }
 
@@ -47,16 +50,16 @@ class CategoryController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    */
-  async store({ request, response }) {
+  async store({ request, response, transform }) {
     try {
       const { title, description, image_id } = request.all()
-      const category = await Category.create({ title, description, image_id })
+      var category = await Category.create({ title, description, image_id })
+      category = await transform.item(category, Transformer)
       return response.status(201).send(category)
     } catch (error) {
-      return response
-        .status(400)
-        .send({ message: 'Erro ao processar a sua solicitação' })
+      return response.status(400).send({ message: 'Erro ao processar a sua solicitação' })
     }
   }
 
@@ -70,7 +73,8 @@ class CategoryController {
    */
   async show({ params, request, response }) {
     try {
-      const category = await Category.findOrFail(params.id)
+      var category = await Category.findOrFail(params.id)
+      category = await transform.item(category, Transformer)
       return response.send(category)
     } catch (error) {
       return response.status(404).send({ message: 'Categoria não encontrada' })
@@ -87,17 +91,16 @@ class CategoryController {
    */
   async update({ params, request, response }) {
     try {
-      const category = await Category.findOrFail(params.id)
+      var category = await Category.findOrFail(params.id)
       const { title, description, image_id } = request.all()
       // merge adiciona os novos valores ao objeto category
       category.merge({ title, description, image_id })
       await category.save()
-
+      // transformo o objeto
+      category = await transform.item(category, Transformer)
       return response.send(category)
     } catch (error) {
-      return response
-        .status(404)
-        .send({ message: 'Não foi possível atualizar a categoria' })
+      return response.status(404).send({ message: 'Não foi possível atualizar a categoria' })
     }
   }
 
@@ -116,9 +119,7 @@ class CategoryController {
       // 204 = ok, mas sem body.
       return response.status(204).send()
     } catch (error) {
-      return response
-        .status(500)
-        .send({ message: 'Não foi possível excluir a categoria' })
+      return response.status(500).send({ message: 'Não foi possível excluir a categoria' })
     }
   }
 }
