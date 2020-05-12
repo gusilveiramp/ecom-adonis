@@ -6,6 +6,7 @@
 const Coupon = use('App/Models/Coupon')
 const Database = use('Database')
 const Service = use('App/Services/Coupon/CouponService')
+const Transformer = use('App/Transformers/Admin/CouponTransformer')
 
 /**
  * Resourceful controller for interacting with coupons
@@ -19,8 +20,9 @@ class CouponController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    * @param {object} ctx.pagination
+   * @param {Transformer} ctx.transform
    */
-  async index({ request, response, pagination }) {
+  async index({ request, response, pagination, transform }) {
     const code = request.input('code')
     const query = Coupon.query()
 
@@ -28,7 +30,8 @@ class CouponController {
       query.where('code', 'ILIKE', `%${code}%`)
     }
 
-    const coupons = await query.paginate(pagination.page, pagination.limit)
+    var coupons = await query.paginate(pagination.page, pagination.limit)
+    coupons = await transform.paginate(coupons, Transformer)
     return response.send(coupons)
   }
 
@@ -39,8 +42,9 @@ class CouponController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    */
-  async store({ request, response }) {
+  async store({ request, response, transform }) {
     /**
      * Regras de uso do cupom:
      * 1 - produto - pode ser utilizado apenas em produtos específicos
@@ -68,7 +72,7 @@ class CouponController {
         'recursive',
       ])
       // crio o cupom
-      const coupon = await Coupon.create(couponData, trx)
+      var coupon = await Coupon.create(couponData, trx)
       // incia o service para sync entre cupons e: products, orders e users
       const service = new Service(coupon, trx)
       const { users, products } = request.only(['users', 'products'])
@@ -97,12 +101,13 @@ class CouponController {
 
       await coupon.save(trx)
       await trx.commit()
+
+      //transformer
+      coupon = await transform.item(coupon, Transformer)
       return response.status(201).send(coupon)
     } catch (error) {
       await trx.rollback()
-      return response
-        .status(400)
-        .send({ message: 'Não foi possível criar o cupom' })
+      return response.status(400).send({ message: 'Não foi possível criar o cupom' })
     }
   }
 
@@ -125,8 +130,9 @@ class CouponController {
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
+   * @param {Transformer} ctx.transform
    */
-  async update({ params, request, response }) {
+  async update({ params, request, response, transform }) {
     const trx = await Database.beginTransaction()
     var coupon = await Coupon.findOrFail(params.id)
 
@@ -174,12 +180,12 @@ class CouponController {
       await coupon.save(trx)
       await trx.commit()
 
+      //transform
+      coupon = await transform.item(coupon, Transformer)
       return response.send(coupon)
     } catch (error) {
       await trx.rollback()
-      return response
-        .status(400)
-        .send({ message: 'Não foi possível atualizar o cupom' })
+      return response.status(400).send({ message: 'Não foi possível atualizar o cupom' })
     }
   }
 
@@ -203,9 +209,7 @@ class CouponController {
       await transaction.commit()
       return response.status(204).send()
       await trx.rollback()
-      return response
-        .status(400)
-        .send({ message: 'Não foi possível excluir o cupom' })
+      return response.status(400).send({ message: 'Não foi possível excluir o cupom' })
     }
   }
 }
